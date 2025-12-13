@@ -1,0 +1,12 @@
+# Fruit Slice Game - Hand Gesture Recognition
+# Dependencies Requirements
+
+# Computer Vision
+opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78
+
+# MediaPipe (untuk hand tracking - akan digunakan di step selanjutnya)
+mediapipe==0.10.9
+
+# Numerical Computing
+numpy==1.24.3
