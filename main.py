@@ -46,9 +46,9 @@ class FruitSliceGame:
         
         # Game objects
         self.fruits = []
-        self.max_fruits = 12  # Lebih banyak buah (sebelumnya 8)
+        self.max_fruits = 6  # Jumlah buah dikurangi
         self.fruit_spawn_counter = 0
-        self.fruit_spawn_rate = 8  # Spawn lebih cepat (sebelumnya 15)
+        self.fruit_spawn_rate = 20  # Spawn lebih lambat
         
         # Game state
         self.score = 0
