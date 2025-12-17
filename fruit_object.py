@@ -40,9 +40,9 @@ class Fruit:
         self.x = random.randint(self.radius, screen_width - self.radius)
         self.y = -self.radius  # Start above screen
         
-        # Velocity - FASTER FALLING
-        self.velocity_y = random.uniform(6, 12)  # Falling speed (doubled)
-        self.velocity_x = random.uniform(-3, 3)  # Horizontal drift
+        # Velocity - Lebih lambat dan smooth
+        self.velocity_y = random.uniform(3, 6)   # Falling speed (lebih lambat)
+        self.velocity_x = random.uniform(-2, 2)  # Horizontal drift (lebih smooth)
         
         # Rotation (for visual effect)
         self.rotation = 0

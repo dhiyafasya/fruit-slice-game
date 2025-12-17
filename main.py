@@ -27,14 +27,14 @@ class FruitSliceGame:
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # Request high res
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         
-        # MediaPipe Hand Tracking
+        # MediaPipe Hand Tracking - HIGH ACCURACY MODE
         self.mp_hands = mp.solutions.hands
         self.mp_drawing = mp.solutions.drawing_utils
         self.hands = self.mp_hands.Hands(
             static_image_mode=False,
             max_num_hands=1,
-            min_detection_confidence=0.7,
-            min_tracking_confidence=0.5
+            min_detection_confidence=0.9,   # 90% akurasi deteksi 
+            min_tracking_confidence=0.8     # 80% akurasi tracking 
         )
         
         # Hand trail for slicing effect
@@ -166,16 +166,69 @@ class FruitSliceGame:
                     self.mp_drawing.DrawingSpec(color=(0, 255, 255), thickness=2)
                 )
                 
-                # HANYA get index finger tip position (landmark 8) - BUKAN JARI LAIN
-                index_tip = hand_landmarks.landmark[self.mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                x = int(index_tip.x * self.window_width)
-                y = int(index_tip.y * self.window_height)
+                # ============ VALIDASI JARI TELUNJUK LURUS (EXTENDED) ============
+                # Ambil landmark jari telunjuk (5=MCP, 6=PIP, 7=DIP, 8=TIP)
+                index_mcp = hand_landmarks.landmark[5]   # Base jari telunjuk
+                index_pip = hand_landmarks.landmark[6]   # Joint tengah
+                index_dip = hand_landmarks.landmark[7]   # Joint atas
+                index_tip = hand_landmarks.landmark[8]   # Ujung jari
                 
-                # Add to trail
-                self.hand_trail.append((x, y))
+                # VALIDASI 1: Jari harus extended (TIP jauh lebih tinggi dari MCP)
+                # Y coordinates: semakin kecil = semakin atas
+                vertical_distance = index_mcp.y - index_tip.y
+                finger_is_up = vertical_distance > 0.15  # Minimal 15% dari frame height
                 
-                # Check collision with fruits if trail has enough points
-                if len(self.hand_trail) >= 2:
+                # VALIDASI 2: Semua joint harus terurut dari bawah ke atas
+                joints_in_order = (
+                    index_mcp.y > index_pip.y > index_dip.y > index_tip.y
+                )
+                
+                # VALIDASI 3: Hitung panjang jari (jarak MCP ke TIP)
+                import math
+                finger_length = math.sqrt(
+                    (index_tip.x - index_mcp.x)**2 + 
+                    (index_tip.y - index_mcp.y)**2
+                )
+                
+                # Jari harus cukup panjang (tidak dilipat)
+                finger_is_extended = finger_length > 0.12  # Minimal 12% diagonal
+                
+                # VALIDASI 4: JARI TELUNJUK HARUS PALING TINGGI (bukan jari lain)
+                # Cek jari tengah, manis, kelingking HARUS lebih rendah dari telunjuk
+                middle_tip = hand_landmarks.landmark[12]   # Jari tengah
+                ring_tip = hand_landmarks.landmark[16]     # Jari manis  
+                pinky_tip = hand_landmarks.landmark[20]    # Kelingking
+                thumb_tip = hand_landmarks.landmark[4]     # Jempol
+                
+                # Jari telunjuk HARUS paling tinggi (y paling kecil)
+                index_is_highest = (
+                    index_tip.y < middle_tip.y - 0.03 and  # Telunjuk > tengah
+                    index_tip.y < ring_tip.y - 0.03 and    # Telunjuk > manis
+                    index_tip.y < pinky_tip.y - 0.03       # Telunjuk > kelingking
+                )
+                
+                # GABUNGAN: Semua validasi harus TRUE
+                is_valid_gesture = (
+                    finger_is_up and 
+                    joints_in_order and 
+                    finger_is_extended and
+                    index_is_highest  # ← PENTING: Telunjuk harus tertinggi!
+                )
+                
+                # HANYA proses jika gesture VALID
+                if is_valid_gesture:
+                    x = int(index_tip.x * self.window_width)
+                    y = int(index_tip.y * self.window_height)
+                    
+                    # Add to trail
+                    self.hand_trail.append((x, y))
+                else:
+                    # Gesture tidak valid = CLEAR TRAIL IMMEDIATELY
+                    if len(self.hand_trail) > 0:
+                        self.hand_trail.clear()
+                
+                # Check collision HANYA jika gesture valid
+                if len(self.hand_trail) >= 2 and is_valid_gesture:
                     p1 = self.hand_trail[-2]
                     p2 = self.hand_trail[-1]
                     
